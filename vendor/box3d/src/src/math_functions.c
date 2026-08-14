@@ -8,7 +8,9 @@
 #include "box3d/collision.h"
 #include "box3d/constants.h"
 
+#if !defined( B3_PLATFORM_WASM )
 #include <math.h>
+#endif
 #include <string.h>
 
 bool b3IsValidFloat( float a )

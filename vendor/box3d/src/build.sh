@@ -95,7 +95,9 @@ mkdir -p build/wasm
 for src in src/*.c; do
 	obj="build/wasm/$(basename "${src%.c}.o")"
 	"$wasm_cc" -c -O3 -std=gnu17 --target=wasm32 \
-		--sysroot="$ODIN_ROOT/vendor/libc-shim" \
+		-ffreestanding \
+		-nostdlibinc \
+		-isystem wasm_include \
 		-Iinclude \
 		-include wasm_compat.h \
 		-DBOX3D_DISABLE_SIMD \
@@ -103,7 +105,10 @@ for src in src/*.c; do
 		"$src" -o "$obj"
 done
 "$wasm_cc" -c -O3 -std=gnu17 --target=wasm32 \
-	--sysroot="$ODIN_ROOT/vendor/libc-shim" \
+	-ffreestanding \
+	-fno-builtin \
+	-nostdlibinc \
+	-isystem wasm_include \
 	-Iinclude \
 	-include wasm_compat.h \
 	-DBOX3D_DISABLE_SIMD \

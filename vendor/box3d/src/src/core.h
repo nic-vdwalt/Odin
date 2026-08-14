@@ -29,7 +29,7 @@
 	#else
 		#define B3_PLATFORM_IOS
 	#endif
-#elif defined( __EMSCRIPTEN__ )
+#elif defined( __EMSCRIPTEN__ ) || defined( __wasm32__ )
 	#define B3_PLATFORM_WASM
 #else
 	#define B3_PLATFORM_UNKNOWN
@@ -40,7 +40,7 @@
 	#define B3_CPU_X86_X64
 #elif defined( __aarch64__ ) || defined( _M_ARM64 ) || defined( __arm__ ) || defined( _M_ARM )
 	#define B3_CPU_ARM
-#elif defined( __EMSCRIPTEN__ )
+#elif defined( __EMSCRIPTEN__ ) || defined( __wasm32__ )
 	#define B3_CPU_WASM
 #else
 	#define B3_CPU_UNKNOWN

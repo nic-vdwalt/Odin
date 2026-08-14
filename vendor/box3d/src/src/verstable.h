@@ -563,7 +563,7 @@ static inline uint64_t vt_hash_integer( uint64_t key )
 
 static inline void vt_wymum( uint64_t *a, uint64_t *b )
 {
-#if defined( __SIZEOF_INT128__ )
+#if defined( __SIZEOF_INT128__ ) && !defined( __wasm32__ )
   __uint128_t r = *a;
   r *= *b; 
   *a = (uint64_t)r;

@@ -16,7 +16,9 @@
 
 #include <inttypes.h>
 #include <limits.h>
+#if !defined( B3_PLATFORM_WASM )
 #include <stdio.h>
+#endif
 #include <string.h>
 
 // Read primitives
@@ -686,7 +688,7 @@ static void b3RecCheckId( b3RecReader* rdr, const char* kind, int gotIndex, unsi
 {
 	if ( gotIndex != recIndex || gotGen != recGen )
 	{
-		printf( "b3ReplayFile: %s id mismatch (rec index1=%d gen=%u, got index1=%d gen=%u)\n", kind, recIndex, recGen, gotIndex,
+		b3Log( "b3ReplayFile: %s id mismatch (rec index1=%d gen=%u, got index1=%d gen=%u)\n", kind, recIndex, recGen, gotIndex,
 				gotGen );
 		rdr->ok = false;
 	}
@@ -998,7 +1000,7 @@ static void b3RecDispatch_CreateHullShape( const b3RecArgs_CreateHullShape* a, b
 	uint32_t id = a->geometryId;
 	if ( id >= (uint32_t)rdr->slotCount )
 	{
-		printf( "b3ReplayFile: hull geometryId %u out of range\n", id );
+		b3Log( "b3ReplayFile: hull geometryId %u out of range\n", id );
 		rdr->ok = false;
 		return;
 	}
@@ -1019,7 +1021,7 @@ static void b3RecDispatch_CreateMeshShape( const b3RecArgs_CreateMeshShape* a, b
 	uint32_t id = a->geometryId;
 	if ( id >= (uint32_t)rdr->slotCount )
 	{
-		printf( "b3ReplayFile: mesh geometryId %u out of range\n", id );
+		b3Log( "b3ReplayFile: mesh geometryId %u out of range\n", id );
 		rdr->ok = false;
 		return;
 	}
@@ -1040,7 +1042,7 @@ static void b3RecDispatch_CreateHeightFieldShape( const b3RecArgs_CreateHeightFi
 	uint32_t id = a->geometryId;
 	if ( id >= (uint32_t)rdr->slotCount )
 	{
-		printf( "b3ReplayFile: heightfield geometryId %u out of range\n", id );
+		b3Log( "b3ReplayFile: heightfield geometryId %u out of range\n", id );
 		rdr->ok = false;
 		return;
 	}
@@ -1048,7 +1050,7 @@ static void b3RecDispatch_CreateHeightFieldShape( const b3RecArgs_CreateHeightFi
 	const b3HeightFieldData* hf = (const b3HeightFieldData*)b3RecGetLiveHeightField( slot );
 	if ( hf == NULL )
 	{
-		printf( "b3ReplayFile: heightfield geometry %u is corrupt\n", id );
+		b3Log( "b3ReplayFile: heightfield geometry %u is corrupt\n", id );
 		rdr->ok = false;
 		return;
 	}
@@ -1067,7 +1069,7 @@ static void b3RecDispatch_CreateCompoundShape( const b3RecArgs_CreateCompoundSha
 	uint32_t id = a->geometryId;
 	if ( id >= (uint32_t)rdr->slotCount )
 	{
-		printf( "b3ReplayFile: compound geometryId %u out of range\n", id );
+		b3Log( "b3ReplayFile: compound geometryId %u out of range\n", id );
 		rdr->ok = false;
 		return;
 	}
@@ -1155,7 +1157,7 @@ static void b3RecDispatch_ShapeSetHull( const b3RecArgs_ShapeSetHull* a, b3RecRe
 	uint32_t id = a->geometryId;
 	if ( id >= (uint32_t)rdr->slotCount )
 	{
-		printf( "b3ReplayFile: hull geometryId %u out of range\n", id );
+		b3Log( "b3ReplayFile: hull geometryId %u out of range\n", id );
 		rdr->ok = false;
 		return;
 	}
@@ -1169,7 +1171,7 @@ static void b3RecDispatch_ShapeSetMesh( const b3RecArgs_ShapeSetMesh* a, b3RecRe
 	uint32_t id = a->geometryId;
 	if ( id >= (uint32_t)rdr->slotCount )
 	{
-		printf( "b3ReplayFile: mesh geometryId %u out of range\n", id );
+		b3Log( "b3ReplayFile: mesh geometryId %u out of range\n", id );
 		rdr->ok = false;
 		return;
 	}
@@ -1679,7 +1681,7 @@ static void b3RecDispatch_StateHash( const b3RecArgs_StateHash* a, b3RecReader* 
 	uint64_t computed = b3HashWorldState( world );
 	if ( computed != a->hash )
 	{
-		printf( "b3ReplayFile: StateHash mismatch (recorded=0x%" PRIx64 ", computed=0x%" PRIx64 ")\n", a->hash, computed );
+		b3Log( "b3ReplayFile: StateHash mismatch (recorded=0x%" PRIx64 ", computed=0x%" PRIx64 ")\n", a->hash, computed );
 		rdr->diverged = true;
 	}
 }
@@ -2157,7 +2159,7 @@ static int b3RecDispatchOne( b3RecReader* rdr )
 #undef B3_REC_OP
 #undef ARG
 		default:
-			printf( "b3ReplayFile: unknown opcode 0x%02X, skipping %u bytes\n", opcode, payloadSize );
+			b3Log( "b3ReplayFile: unknown opcode 0x%02X, skipping %u bytes\n", opcode, payloadSize );
 			// payloadStart is in bounds, so size - payloadStart is the bytes left to skip over
 			if ( payloadSize > (uint32_t)( rdr->size - payloadStart ) )
 			{
@@ -2414,12 +2416,12 @@ static bool b3RecLoadSlots( b3RecReader* rdr, const void* data, int size, uint64
 	int regEnd = regStart + (int)registryByteCount;
 	if ( regEnd > size )
 	{
-		printf( "b3ReplayFile: registry block out of bounds\n" );
+		b3Log( "b3ReplayFile: registry block out of bounds\n" );
 		return false;
 	}
 	if ( regStart + 4 > size )
 	{
-		printf( "b3ReplayFile: registry too small\n" );
+		b3Log( "b3ReplayFile: registry too small\n" );
 		return false;
 	}
 
@@ -2440,7 +2442,7 @@ static bool b3RecLoadSlots( b3RecReader* rdr, const void* data, int size, uint64
 	// registry bytes is a corrupt header, so reject it before allocating.
 	if ( rp > dataEnd || (size_t)count > (size_t)( dataEnd - rp ) / 5 )
 	{
-		printf( "b3ReplayFile: registry count out of range\n" );
+		b3Log( "b3ReplayFile: registry count out of range\n" );
 		return false;
 	}
 
@@ -2451,7 +2453,7 @@ static bool b3RecLoadSlots( b3RecReader* rdr, const void* data, int size, uint64
 	{
 		if ( rp + 5 > dataEnd )
 		{
-			printf( "b3ReplayFile: registry truncated at entry %u\n", i );
+			b3Log( "b3ReplayFile: registry truncated at entry %u\n", i );
 			for ( uint32_t j = 0; j < i; ++j )
 			{
 				if ( slots[j].bytes != NULL )
@@ -2467,7 +2469,7 @@ static bool b3RecLoadSlots( b3RecReader* rdr, const void* data, int size, uint64
 		rp += 5;
 		if ( rp + byteCount > dataEnd )
 		{
-			printf( "b3ReplayFile: registry entry %u bytes out of bounds\n", i );
+			b3Log( "b3ReplayFile: registry entry %u bytes out of bounds\n", i );
 			for ( uint32_t j = 0; j < i; ++j )
 			{
 				if ( slots[j].bytes != NULL )
@@ -2728,7 +2730,7 @@ b3RecPlayer* b3RecPlayer_Create( const void* data, int size, int workerCount )
 {
 	if ( data == NULL || size < (int)sizeof( b3RecHeader ) )
 	{
-		printf( "b3RecPlayer_Create: recording too small\n" );
+		b3Log( "b3RecPlayer_Create: recording too small\n" );
 		return NULL;
 	}
 
@@ -2737,32 +2739,32 @@ b3RecPlayer* b3RecPlayer_Create( const void* data, int size, int workerCount )
 
 	if ( hdr.magic != B3_REC_MAGIC )
 	{
-		printf( "b3RecPlayer_Create: bad magic 0x%08X\n", hdr.magic );
+		b3Log( "b3RecPlayer_Create: bad magic 0x%08X\n", hdr.magic );
 		return NULL;
 	}
 	// Only the major version is breaking. Minor bumps are additive op-stream changes that keep the
 	// header shape, and the dispatcher skips opcodes it doesn't know, so a minor mismatch still loads.
 	if ( hdr.versionMajor != B3_REC_VERSION_MAJOR )
 	{
-		printf( "b3RecPlayer_Create: version mismatch %u.%u vs %u.%u\n", hdr.versionMajor, hdr.versionMinor, B3_REC_VERSION_MAJOR,
+		b3Log( "b3RecPlayer_Create: version mismatch %u.%u vs %u.%u\n", hdr.versionMajor, hdr.versionMinor, B3_REC_VERSION_MAJOR,
 				B3_REC_VERSION_MINOR );
 		return NULL;
 	}
 	if ( hdr.pointerWidth != (uint8_t)sizeof( void* ) )
 	{
-		printf( "b3RecPlayer_Create: pointer width mismatch %u vs %u\n", hdr.pointerWidth, (unsigned)sizeof( void* ) );
+		b3Log( "b3RecPlayer_Create: pointer width mismatch %u vs %u\n", hdr.pointerWidth, (unsigned)sizeof( void* ) );
 		return NULL;
 	}
 	if ( hdr.bigEndian != 0 )
 	{
-		printf( "b3RecPlayer_Create: big-endian recording not supported\n" );
+		b3Log( "b3RecPlayer_Create: big-endian recording not supported\n" );
 		return NULL;
 	}
 
 	// Every recording is snapshot-seeded: the seed blob sits between the header and the op stream.
 	if ( hdr.snapshotSize == 0 )
 	{
-		printf( "b3RecPlayer_Create: missing snapshot seed\n" );
+		b3Log( "b3RecPlayer_Create: missing snapshot seed\n" );
 		return NULL;
 	}
 
@@ -2773,7 +2775,7 @@ b3RecPlayer* b3RecPlayer_Create( const void* data, int size, int workerCount )
 
 	if ( headerEnd64 < sizeof( b3RecHeader ) || headerEnd64 > registryEnd64 || registryEnd64 > (uint64_t)size )
 	{
-		printf( "b3RecPlayer_Create: corrupt offsets\n" );
+		b3Log( "b3RecPlayer_Create: corrupt offsets\n" );
 		return NULL;
 	}
 
@@ -2845,7 +2847,7 @@ b3RecPlayer* b3RecPlayer_Create( const void* data, int size, int workerCount )
 		b3World* replayWorld = b3GetWorldFromId( worldId );
 		if ( b3DeserializeIntoShell( copy + snapStart, snapSize, replayWorld, &player->rdr ) == false )
 		{
-			printf( "b3RecPlayer_Create: snapshot deserialization failed\n" );
+			b3Log( "b3RecPlayer_Create: snapshot deserialization failed\n" );
 			b3DestroyWorld( worldId );
 			b3RecFreeSlots( player->rdr.slots, player->rdr.slotCount );
 			if ( player->rdr.tags != NULL )
@@ -3537,7 +3539,8 @@ void b3RecPlayer_DrawFrameQueries( b3RecPlayer* player, b3DebugDraw* draw, int q
 					id = tag->id;
 				}
 			}
-			char label[64];
+			char label[64] = { 0 };
+#if !defined( B3_PLATFORM_WASM )
 			if ( name != NULL && name[0] != '\0' && id != 0 )
 			{
 				snprintf( label, sizeof( label ), "%.40s (%" PRIu64 ")", name, id );
@@ -3550,6 +3553,7 @@ void b3RecPlayer_DrawFrameQueries( b3RecPlayer* player, b3DebugDraw* draw, int q
 			{
 				snprintf( label, sizeof( label ), "#%" PRIu64, id );
 			}
+#endif
 			b3Pos labelPos = q->origin;
 			if ( q->kind == B3_RECQ_OVERLAP_AABB )
 			{

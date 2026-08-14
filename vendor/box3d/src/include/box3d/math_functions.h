@@ -7,8 +7,12 @@
 
 #include <float.h>
 
+#if defined( __wasm32__ ) && defined( __clang__ )
+#define sqrtf __builtin_sqrtf
+#else
 // for sqrtf and remainderf
 #include <math.h>
+#endif
 #include <stdbool.h>
 
 /**
@@ -212,8 +216,12 @@ B3_INLINE float b3Cos( float radians )
 /// Convert any angle into the range [-pi, pi].
 B3_INLINE float b3UnwindAngle( float radians )
 {
-	// Assuming this is deterministic
-	return remainderf( radians, 2.0f * B3_PI );
+	const float twoPi = 2.0f * B3_PI;
+#if defined( __wasm32__ ) && defined( __clang__ )
+	return radians - twoPi * __builtin_nearbyintf( radians / twoPi );
+#else
+	return remainderf( radians, twoPi );
+#endif
 }
 
 /// Vector addition.

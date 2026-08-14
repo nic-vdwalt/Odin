@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: 2025 Erin Catto
 // SPDX-License-Identifier: MIT
 
+#include "core.h"
+
 #if defined( B3_COMPILER_MSVC )
 // CRTDBG requires these to be included first
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
 #include <stdlib.h>
-#else
+#elif !defined( B3_PLATFORM_WASM )
 #include <stdlib.h>
 #endif
-
-#include "core.h"
 
 #include "box3d/constants.h"
 #include "box3d/math_functions.h"
@@ -33,7 +33,9 @@
 
 #include "platform.h"
 
+#if !defined( B3_PLATFORM_WASM )
 #include <stdio.h>
+#endif
 
 // This allows the user to change the length units at runtime
 static float b3_lengthUnitsPerMeter = 1.0f;
@@ -64,7 +66,13 @@ float b3GetStallThreshold( void )
 
 static int b3DefaultAssertFcn( const char* condition, const char* fileName, int lineNumber )
 {
+#if defined( B3_PLATFORM_WASM )
+	(void)condition;
+	(void)fileName;
+	(void)lineNumber;
+#else
 	printf( "BOX3D ASSERTION: %s, %s, line %d\n", condition, fileName, lineNumber );
+#endif
 
 	// return non-zero to break to debugger
 	return 1;
@@ -92,7 +100,11 @@ int b3InternalAssert( const char* condition, const char* fileName, int lineNumbe
 
 static void b3DefaultLogFcn( const char* message )
 {
+#if defined( B3_PLATFORM_WASM )
+	(void)message;
+#else
 	printf( "Box3D: %s\n", message );
+#endif
 }
 
 b3LogFcn* b3LogHandler = b3DefaultLogFcn;
@@ -105,12 +117,16 @@ void b3SetLogFcn( b3LogFcn* logFcn )
 
 void b3Log( const char* format, ... )
 {
+#if defined( B3_PLATFORM_WASM )
+	(void)format;
+#else
 	va_list args;
 	va_start( args, format );
 	char buffer[512];
 	vsnprintf( buffer, sizeof( buffer ), format, args );
 	b3LogHandler( buffer );
 	va_end( args );
+#endif
 }
 
 b3Version b3GetVersion( void )
@@ -164,7 +180,10 @@ void* b3Alloc( size_t size )
 		return ptr;
 	}
 
-#ifdef B3_PLATFORM_WINDOWS
+#ifdef B3_PLATFORM_WASM
+	__builtin_trap();
+	void* ptr = NULL;
+#elif defined( B3_PLATFORM_WINDOWS )
 	void* ptr = _aligned_malloc( alignedSize, B3_ALIGNMENT );
 #elif defined( B3_PLATFORM_ANDROID )
 	void* ptr = NULL;
@@ -200,7 +219,9 @@ void b3Free( void* mem, size_t size )
 	}
 	else
 	{
-#ifdef B3_PLATFORM_WINDOWS
+#ifdef B3_PLATFORM_WASM
+		__builtin_trap();
+#elif defined( B3_PLATFORM_WINDOWS )
 		_aligned_free( mem );
 #else
 		free( mem );

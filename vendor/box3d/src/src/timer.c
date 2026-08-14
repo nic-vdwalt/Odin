@@ -562,21 +562,41 @@ void b3JoinThread( b3Thread* t )
 
 #else
 
-uint64_t b3GetTicks( void )
+#if defined( __GNUC__ ) || defined( __clang__ )
+__attribute__( ( weak ) )
+#endif
+uint64_t b3PlatformTicks( void )
 {
 	return 0;
 }
 
+uint64_t b3GetTicks( void )
+{
+	return b3PlatformTicks();
+}
+
 float b3GetMilliseconds( uint64_t ticks )
 {
-	( (void)( ticks ) );
-	return 0.0f;
+	uint64_t ticksNow = b3PlatformTicks();
+	if ( ticksNow <= ticks )
+	{
+		return 0.0f;
+	}
+
+	return (float)( (double)( ticksNow - ticks ) * 0.001 );
 }
 
 float b3GetMillisecondsAndReset( uint64_t* ticks )
 {
-	( (void)( ticks ) );
-	return 0.0f;
+	uint64_t ticksNow = b3PlatformTicks();
+	uint64_t ticksThen = *ticks;
+	*ticks = ticksNow;
+	if ( ticksNow <= ticksThen )
+	{
+		return 0.0f;
+	}
+
+	return (float)( (double)( ticksNow - ticksThen ) * 0.001 );
 }
 
 void b3Yield( void )

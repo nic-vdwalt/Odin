@@ -1112,6 +1112,11 @@ void b3StopRecordingInternal( b3World* world )
 
 bool b3SaveRecordingToFile( const b3Recording* recording, const char* path )
 {
+#if defined( B3_PLATFORM_WASM )
+	(void)recording;
+	(void)path;
+	return false;
+#else
 	if ( recording == NULL || path == NULL )
 	{
 		return false;
@@ -1126,10 +1131,15 @@ bool b3SaveRecordingToFile( const b3Recording* recording, const char* path )
 	size_t written = fwrite( recording->buffer.data, 1, (size_t)recording->buffer.size, f );
 	fclose( f );
 	return (int)written == recording->buffer.size;
+#endif
 }
 
 b3Recording* b3LoadRecordingFromFile( const char* path )
 {
+#if defined( B3_PLATFORM_WASM )
+	(void)path;
+	return NULL;
+#else
 	if ( path == NULL )
 	{
 		return NULL;
@@ -1177,6 +1187,7 @@ b3Recording* b3LoadRecordingFromFile( const char* path )
 
 	rec->buffer.size = (int)fileSize;
 	return rec;
+#endif
 }
 
 // Geometry interning helpers
